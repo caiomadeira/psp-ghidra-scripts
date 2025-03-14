@@ -8,9 +8,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #      http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -146,7 +146,7 @@ def resolveExports(exports_addr, exports_end, nidDB, moduleInfo_name):
         # update address
         addr = exports_addr.add(exports_offset)
 
-        
+
     # iterate through array of exports
     module_index = 0
     for module in modules:
@@ -227,17 +227,20 @@ def resolveImports(imports_addr, imports_end, nidDB):
     addr = imports_addr
     modules = []
     while addr.add(import_t_len).compareTo(imports_end) <= 0:
-        # create struct at address
-        currentProgram.getListing().createData(addr, import_t, import_t_len)
-        # create module object from data
-        module = getDataAt(addr)
-        # append module to modules list
-        modules.append(module)
-        # get entry len & update exports_offset
-        entry_len = module.getComponent(2).value.getUnsignedValue()
-        imports_offset += 4 * entry_len
-        # update address
-        addr = imports_addr.add(imports_offset)
+        try:
+            # create struct at address
+            currentProgram.getListing().createData(addr, import_t, import_t_len)
+            # create module object from data
+            module = getDataAt(addr)
+            # append module to modules list
+            modules.append(module)
+            # get entry len & update exports_offset
+            entry_len = module.getComponent(2).value.getUnsignedValue()
+            imports_offset += 4 * entry_len
+            # update address
+            addr = imports_addr.add(imports_offset)
+        except ghidra.program.model.util.CodeUnitInsertionException as e:
+            print("Warning: Skipping address {addr} due to conflict: {e}")
 
     # iterate through array of library imports
     for module in modules:
@@ -302,11 +305,11 @@ def getModuleInfoAddrFromLoadCommands():
     # account for kernel mode PRX with upper bit set
     load_paddr &= 0x7fffffff
     load_paddr = Scalar(32, load_paddr - load_offset, False)
-    
+
     sceModuleInfo_addr = getAddressFactory().getAddress(load_paddr.toString())
 
     # get the ELF's image base since PRX's aren't based at 0
-    image_base = currentProgram.getImageBase().getAddressableWordOffset() 
+    image_base = currentProgram.getImageBase().getAddressableWordOffset()
 
     return sceModuleInfo_addr.add(image_base)
 
